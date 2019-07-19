@@ -10,10 +10,12 @@ from keras import models
 from keras import layers
 from keras.models import load_model
 from keras.regularizers import l2
-from keras.layers import BatchNormalization, Dropout, AveragePooling2D, GlobalAvgPool2D
+from keras.layers import BatchNormalization, Dropout, AveragePooling2D, GlobalAvgPool2D, MaxPooling2D
 from keras.applications import inception_v3
 from sklearn.metrics import confusion_matrix, f1_score
 from keras.models import Model
+from keras.callbacks import ReduceLROnPlateau
+from keras.regularizers import l1
 from numpy.random import seed
 seed(111)
 from tensorflow import set_random_seed
@@ -56,9 +58,9 @@ def set_cnn_model():
     cnn.add(layers.Conv2D(64, (3, 3), activation='relu', input_shape=(450, 600,  3), padding='SAME'))
     cnn.add(layers.BatchNormalization())
     cnn.add(layers.MaxPooling2D((2, 2)))
-    cnn.add(layers.Conv2D(32, (3, 3), activation='relu'))
-    cnn.add(layers.BatchNormalization())
-    cnn.add(layers.MaxPooling2D((2, 2))) 
+#     cnn.add(layers.Conv2D(32, (3, 3), activation='relu'))
+#     cnn.add(layers.BatchNormalization())
+#     cnn.add(layers.MaxPooling2D((2, 2))) 
     cnn.add(layers.Flatten())
     cnn.add(layers.Dense(32, activation='relu'))
     cnn.add(layers.BatchNormalization())
@@ -83,23 +85,22 @@ def fit_cnn_model(cnn, loss_param='categorical_crossentropy', optimize='sgd', ep
                         batch_size=batch,
                         validation_data=(images_val, labels_val))
     
-    cnn.save('CNN_Run_1.h5')
+    cnn.save('../saved_models/CNN_Run_1.h5')
     
     return images_test, labels_test
 
 def set_cnn_dropout_model():
     cnn = models.Sequential()
     cnn.add(layers.Conv2D(64, (3, 3), activation='relu', input_shape=(450, 600,  3), padding='SAME'))
-    cnn.add(Dropout(0.2))
     cnn.add(layers.BatchNormalization())
     cnn.add(layers.MaxPooling2D((2, 2)))
+    cnn.add(Dropout(0.1))
     cnn.add(layers.Conv2D(32, (3, 3), activation='relu'))
-    cnn.add(Dropout(0.2))
     cnn.add(layers.BatchNormalization())
     cnn.add(layers.MaxPooling2D((2, 2))) 
+    cnn.add(Dropout(0.2))
     cnn.add(layers.Flatten())
     cnn.add(layers.Dense(32, activation='relu'))
-    cnn.add(Dropout(0.2))
     cnn.add(layers.BatchNormalization())
     cnn.add(layers.Dense(7, activation='softmax'))
 
@@ -107,7 +108,7 @@ def set_cnn_dropout_model():
     
     return cnn
 
-def fit_cnn_model_dropout(cnn, loss_param='mean_squared_error', epoch=20, batch=2150):
+def fit_cnn_model_dropout(cnn, loss_param='categorical_crossentropy', epoch=100, batch=32):
     # # images directory path for train, test, and validation.
     # train_destination = '../train_dir'
     # test_destination = '../test_dir'
@@ -138,7 +139,10 @@ def fit_cnn_model_dropout(cnn, loss_param='mean_squared_error', epoch=20, batch=
     
     images_train, labels_train, images_test, labels_test, images_val, labels_val = split_images()
    
-    sgd = SGD(lr=0.1, momentum=0.9, decay=0.0, nesterov=False)
+    rlrop = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=100) 
+    
+    
+    sgd = SGD(lr=0.1, momentum=0.9, nesterov=False)
     cnn.compile(loss=loss_param,
                     optimizer=sgd,
                     metrics=['acc'])
@@ -147,32 +151,37 @@ def fit_cnn_model_dropout(cnn, loss_param='mean_squared_error', epoch=20, batch=
                         labels_train,
                         epochs=epoch,
                         batch_size=batch,
-                        validation_data=(images_val, labels_val))
+                        validation_data=(images_val, labels_val),
+                        callbacks=[rlrop])
     
-    cnn.save('CNN_Run_1.h5')
+    cnn.save('../saved_models/CNN_Run_1.h5')
     
     return images_test, labels_test
 
 
-def imagenet_classifier(epoch=20, batch=150):
+def imagenet_classifier(epoch=20, batch=300):
     imagenet=inception_v3.InceptionV3(weights='imagenet',include_top=False)
     imagenet_new =imagenet.output
     new_imagenet = models.Sequential()
     new_imagenet.add(imagenet)
+#     new_imagenet.add(MaxPooling2D(2,2))
+#     new_imagenet.add(layers.BatchNormalization())
     new_imagenet.add(GlobalAvgPool2D())
-    # new_imagenet.add(Dropout(0.2))
-    new_imagenet.add(layers.BatchNormalization())
-    new_imagenet.add(Dense(1024,activation='relu'))
-    # new_imagenet.add(Dropout(0.2))
-    new_imagenet.add(layers.BatchNormalization())
-    new_imagenet.add(Dense(1024,activation='relu')) #dense layer 2
-    # new_imagenet.add(Dropout(0.2))
-    new_imagenet.add(layers.BatchNormalization())
-    new_imagenet.add(Dense(512,activation='relu')) #dense layer 3
-    # new_imagenet.add(Dropout(0.2))
-    new_imagenet.add(layers.BatchNormalization())
+    new_imagenet.add(Dense(1024, activity_regularizer=l1(0.001), activation='relu'))
+    new_imagenet.add(Dropout(0.2))
+    new_imagenet.add(BatchNormalization())
+    new_imagenet.add(Dense(1024,  activity_regularizer=l1(0.001), activation='relu')) 
+    new_imagenet.add(Dropout(0.2))
+#     new_imagenet.add(layers.BatchNormalization())
+#     new_imagenet.add(Dense(1024, activation='relu')) 
+#     new_imagenet.add(MaxPooling2D(2,2))
+#     new_imagenet.add(Dropout(0.3))
+    new_imagenet.add(BatchNormalization())
+    new_imagenet.add(Dense(512,  activity_regularizer=l1(0.001), activation='relu')) 
+    new_imagenet.add(Dropout(0.2))
+    new_imagenet.add(BatchNormalization())
     new_imagenet.add(Dense(7,activation='softmax')) #final layer with softmax activation
-    
+ 
     # Freeze layers - no training
     for layer in new_imagenet.layers[:1]:
         layer.trainable=False
@@ -186,6 +195,6 @@ def imagenet_classifier(epoch=20, batch=150):
             batch_size=batch,
             validation_data=(images_val, labels_val))
     
-    new_imagenet.save('imagenet_1.h5')
+    new_imagenet.save('../saved_models/imagenet_1.h5')
     
-    return images_test, labels_test
+    return new_imagenet, images_test, labels_test

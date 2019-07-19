@@ -65,6 +65,32 @@ def sns_countplot(df, col_name):
     fig.set_size_inches(20, 6)
     sns.countplot(x=col_name, data=df, ax=ax);
     plt.show();
+    
+'''def copy_images(id_num, df=metadata_df, col_name='category_id'):
+    all_cat_idx = np.array(df[df[col_name] == id_num].index) # All indices of a category
+    n_tr = np.ceil(len(df[df[col_name] == id_num].index) * 0.8) # Use 80% 
+    indices = np.random.choice(all_cat_idx, int(n_tr), replace=False) # train + val indices
+    indices_tr = indices[:int(np.ceil(n_tr * 0.8))] # train indices 80%  
+    indices_val = indices[int(np.ceil(n_tr * 0.8)):] # validation indices 20%
+    train_cat = df[np.isin(df.index, indices_tr)].reset_index() # train rows from df
+    val_cat = df[np.isin(df.index, indices_val)].reset_index()  # validation rows from df  
+    
+    
+    train_destination = '/Users/basselhaidar/Desktop/Final Project/train_dir/'+ str(id_num)
+    test_destination = '/Users/basselhaidar/Desktop/Final Project/test_dir/'+ str(id_num)
+    valid_destination = '/Users/basselhaidar/Desktop/Final Project/valid_dir/'+ str(id_num)
+    
+    for row in range(train_cat.shape[0]):
+        copy2(train_cat.loc[row, 'file_path'], train_destination)
+    
+    for row in range(val_cat.shape[0]):
+        copy2(val_cat.loc[row, 'file_path'], valid_destination)
+        
+        
+    test_idx = all_cat_idx[~np.isin(all_cat_idx, indices)]
+    test_cat = df.iloc[test_idx, :].reset_index()
+    for row in range(len(test_idx)):
+        copy2(test_cat.loc[row, 'file_path'], test_destination)'''
 '''
 # fill age null values by the mean age
 metadata_df.age.fillna(metadata_df.age.mean(), inplace=True)
