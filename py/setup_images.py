@@ -7,12 +7,12 @@ sns.set(style="darkgrid")
 
 def create_img_dict():
 
-    data_dir = '../skin-cancer-mnist-ham10000/'
+    data_dir = '/Users/basselhaidar/Desktop/Final Project/skin-cancer-mnist-ham10000/'
     # Create dataframe and profile raw data
     raw_metadata_df = pd.read_csv(data_dir + 'HAM10000_metadata.csv')
     # Save the directory path of HAM10000_images_part_1 and HAM10000_images_part_2
-    image_part1_dir = '../skin-cancer-mnist-ham10000/HAM10000_images_part_1/'
-    image_part2_dir = '../skin-cancer-mnist-ham10000/HAM10000_images_part_2/'
+    image_part1_dir = '/Users/basselhaidar/Desktop/Final Project/skin-cancer-mnist-ham10000/HAM10000_images_part_1/'
+    image_part2_dir = '/Users/basselhaidar/Desktop/Final Project/skin-cancer-mnist-ham10000/HAM10000_images_part_2/'
     # Save the path of the images into their respective lists
     image_part_1_list = [image_part1_dir + image_path for image_path in os.listdir(image_part1_dir)]
     image_part_2_list = [image_part2_dir + image_path for image_path in os.listdir(image_part2_dir)]
