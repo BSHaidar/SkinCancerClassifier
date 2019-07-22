@@ -61,7 +61,7 @@ def set_cnn_model():
     cnn.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', dilation_rate=(2, 2), kernel_regularizer=l2(0.01), input_shape=(112, 200,  3)))
     cnn.add(layers.BatchNormalization())
     cnn.add(layers.MaxPooling2D((2, 2)))
-    cnn.add(Dropout(0.50)) # Added to see if it helps in reducing overfitting
+    # cnn.add(Dropout(0.50)) # Added to see if it helps in reducing overfitting
     cnn.add(layers.Flatten())
     cnn.add(layers.Dense(32, activation='relu'))
     cnn.add(layers.BatchNormalization())
@@ -73,12 +73,16 @@ def set_cnn_model():
 
 
 
-def fit_cnn_model(cnn, loss_param='categorical_crossentropy', optimize='sgd', epoch=20, batch_num=32):
+def fit_cnn_model(cnn, loss_param='categorical_crossentropy', epoch=100, batch_num=32):
     
     images_train, labels_train, images_test, labels_test, images_val, labels_val = split_images()
+    
+    optimize = SGD(lr=1e-2, momentum=0.9, decay=1e-2/epoch) # Added fo optimizing LR
     cnn.compile(loss=loss_param,
                     optimizer=optimize,
                     metrics=['accuracy'])
+    
+    
 
     cnn_fit = cnn.fit(images_train,
                         labels_train,
@@ -86,7 +90,7 @@ def fit_cnn_model(cnn, loss_param='categorical_crossentropy', optimize='sgd', ep
                         batch_size=batch_num,
                         validation_data=(images_val, labels_val))
     
-    cnn.save('/Users/basselhaidar/Desktop/Final Project/saved_models/CNN_Run_2.h5')
+    cnn.save('/Users/basselhaidar/Desktop/Final Project/saved_models/CNN_LR_Decay.h5')
     
     return cnn, images_test, labels_test
 
@@ -140,11 +144,11 @@ def imagenet_classifier(epoch=10, batch=100):
     new_imagenet = models.Sequential()
     new_imagenet.add(imagenet)
     new_imagenet.add(GlobalAvgPool2D())
-    new_imagenet.add(Dense(1024, activation='relu', kernel_regularizer=l2(0.01)))
+    new_imagenet.add(Dense(1024, activation='relu', kernel_regularizer=l2(0.03)))
     new_imagenet.add(BatchNormalization())
-    new_imagenet.add(Dense(1024, activation='relu', kernel_regularizer=l2(0.01))) 
+    new_imagenet.add(Dense(1024, activation='relu', kernel_regularizer=l2(0.03))) 
     new_imagenet.add(BatchNormalization())
-    new_imagenet.add(Dense(512, activation='relu', kernel_regularizer=l2(0.01))) 
+    new_imagenet.add(Dense(512, activation='relu', kernel_regularizer=l2(0.03))) 
     new_imagenet.add(BatchNormalization())
     new_imagenet.add(Dense(7,activation='softmax')) #final layer with softmax activation
  
@@ -152,7 +156,7 @@ def imagenet_classifier(epoch=10, batch=100):
     for layer in new_imagenet.layers[:1]:
         layer.trainable=False
     
-    rlrop = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10) 
+    rlrop = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5) 
     sgd = SGD(lr=0.01, momentum=0.9, decay = 0.01, nesterov=True)
     
     new_imagenet.compile(optimizer=sgd,loss='categorical_crossentropy', metrics=['accuracy'])
