@@ -58,12 +58,10 @@ def split_images():
 
 def set_cnn_model():
     cnn = models.Sequential()
-    cnn.add(layers.Conv2D(64, (3, 3), activation='relu', input_shape=(112, 200,  3)))
+    cnn.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', dilation_rate=(2, 2), kernel_regularizer=l2(0.01), input_shape=(112, 200,  3)))
     cnn.add(layers.BatchNormalization())
     cnn.add(layers.MaxPooling2D((2, 2)))
-#     cnn.add(layers.Conv2D(32, (3, 3), activation='relu'))
-#     cnn.add(layers.BatchNormalization())
-#     cnn.add(layers.MaxPooling2D((2, 2))) 
+    cnn.add(Dropout(0.50)) # Added to see if it helps in reducing overfitting
     cnn.add(layers.Flatten())
     cnn.add(layers.Dense(32, activation='relu'))
     cnn.add(layers.BatchNormalization())
@@ -75,7 +73,7 @@ def set_cnn_model():
 
 
 
-def fit_cnn_model(cnn, loss_param='categorical_crossentropy', optimize='sgd', epoch=20, batch=50):
+def fit_cnn_model(cnn, loss_param='categorical_crossentropy', optimize='sgd', epoch=20, batch_num=32):
     
     images_train, labels_train, images_test, labels_test, images_val, labels_val = split_images()
     cnn.compile(loss=loss_param,
@@ -85,26 +83,26 @@ def fit_cnn_model(cnn, loss_param='categorical_crossentropy', optimize='sgd', ep
     cnn_fit = cnn.fit(images_train,
                         labels_train,
                         epochs=epoch,
-                        batch_size=batch,
+                        batch_size=batch_num,
                         validation_data=(images_val, labels_val))
     
-    cnn.save('/Users/basselhaidar/Desktop/Final Project/saved_models/CNN_Run_1.h5')
+    cnn.save('/Users/basselhaidar/Desktop/Final Project/saved_models/CNN_Run_2.h5')
     
-    return images_test, labels_test
+    return cnn, images_test, labels_test
 
 def set_cnn_bn_l2_model():
     cnn = models.Sequential()
-    cnn.add(layers.Conv2D(128, (1, 1), activation='relu', dilation_rate=(2, 2), kernel_regularizer=l2(1),input_shape=(112, 200, 3)))
+    cnn.add(layers.Conv2D(128, (1, 1), activation='relu', kernel_initializer='he_uniform', dilation_rate=(2, 2), kernel_regularizer=l2(0.01),input_shape=(112, 200, 3)))
     cnn.add(layers.BatchNormalization())
     cnn.add(layers.MaxPooling2D((2, 2)))
-    cnn.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_regularizer=l2(1)))
+    cnn.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_regularizer=l2(0.01)))
     cnn.add(layers.BatchNormalization())
     cnn.add(layers.MaxPooling2D((2, 2)))
 #     cnn.add(layers.Conv2D(32, (3, 3), activation='relu', kernel_regularizer=l2(1)))
 #     cnn.add(layers.BatchNormalization())
 #     cnn.add(layers.MaxPooling2D((2, 2))) 
     cnn.add(layers.Flatten())
-    cnn.add(layers.Dense(32, activation='relu', kernel_regularizer=l2(1)))
+    cnn.add(layers.Dense(32, activation='relu', dilation_rate=(2, 2),kernel_regularizer=l2(0.01)))
     cnn.add(layers.BatchNormalization())
     cnn.add(layers.Dense(7, activation='softmax'))
 
@@ -112,14 +110,14 @@ def set_cnn_bn_l2_model():
     
     return cnn
 
-def fit_cnn_bn_l2_model(cnn, batch_num, loss_param='categorical_crossentropy', epoch=20):
+def fit_cnn_bn_l2_model(cnn, batch_num=32, loss_param='categorical_crossentropy', epoch=20):
   
     images_train, labels_train, images_test, labels_test, images_val, labels_val = split_images()
    
-    rlrop = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10) 
+    rlrop = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5) 
     
     
-    sgd = SGD(lr=0.001, momentum=0.9, decay = 0.01, nesterov=True)
+    sgd = SGD(lr=0.1, momentum=0.99, decay = 0.01, nesterov=True)
     cnn.compile(loss=loss_param,
                     optimizer=sgd,
                     metrics=['accuracy'])
@@ -133,7 +131,7 @@ def fit_cnn_bn_l2_model(cnn, batch_num, loss_param='categorical_crossentropy', e
     
     cnn.save('/Users/basselhaidar/Desktop/Final Project/saved_models/CNN_Run_1.h5')
     
-    return images_test, labels_test
+    return cnn, images_test, labels_test
 
 
 def imagenet_classifier(epoch=10, batch=100):
@@ -142,11 +140,11 @@ def imagenet_classifier(epoch=10, batch=100):
     new_imagenet = models.Sequential()
     new_imagenet.add(imagenet)
     new_imagenet.add(GlobalAvgPool2D())
-    new_imagenet.add(Dense(1024, activation='relu', kernel_regularizer=l2(1)))
+    new_imagenet.add(Dense(1024, activation='relu', kernel_regularizer=l2(0.01)))
     new_imagenet.add(BatchNormalization())
-    new_imagenet.add(Dense(1024, activation='relu', kernel_regularizer=l2(1))) 
+    new_imagenet.add(Dense(1024, activation='relu', kernel_regularizer=l2(0.01))) 
     new_imagenet.add(BatchNormalization())
-    new_imagenet.add(Dense(512, activation='relu', kernel_regularizer=l2(1))) 
+    new_imagenet.add(Dense(512, activation='relu', kernel_regularizer=l2(0.01))) 
     new_imagenet.add(BatchNormalization())
     new_imagenet.add(Dense(7,activation='softmax')) #final layer with softmax activation
  
