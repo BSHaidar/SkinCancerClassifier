@@ -2,15 +2,11 @@ import pandas as pd
 import numpy as np
 from numpy.random import seed
 import os
-import math
 import matplotlib.pyplot as plt
-from matplotlib.pyplot import imread, imshow
 import seaborn as sns
-from PIL import Image
-from numpy.random import seed
 
-from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
-
+from keras.preprocessing.image import ImageDataGenerator, load_img
+from sklearn.metrics import confusion_matrix, f1_score, classification_report
 
 def img_name(dir_name):
     ''' 
@@ -20,6 +16,7 @@ def img_name(dir_name):
     Return
         None
     '''
+    
     img_list = []
     for i in range(0, 7):
         sub_dir= dir_name + str(i) +'/'
@@ -42,16 +39,8 @@ def create_img_dict(data_dir = '../SkinCancerClassifier/',
         Dataframe and image dictionnary
     '''
     
-    # data_dir = '../SkinCancerClassifier/'
-    
     # Create dataframe of raw data
     raw_metadata_df = pd.read_csv(data_dir + 'HAM10000_metadata.csv')
-    
-    # Directories for images in train, validation, and test
-    # image_test_dir = '../SkinCancerClassifier/test_dir/'
-    # image_train_dir = '../SkinCancerClassifier/train_dir/'
-    # image_val_dir = '../SkinCancerClassifier/valid_dir/'
-    
     # Create a combined list images in all directories with their full file/image path
     img_test_list = img_name(image_test_dir)
     img_test_list = [image_test_dir + img_name for img_name in img_test_list]
@@ -60,7 +49,6 @@ def create_img_dict(data_dir = '../SkinCancerClassifier/',
     img_val_list = img_name(image_val_dir)
     img_val_list = [image_val_dir + img_name for img_name in img_val_list]
     all_img_list = img_test_list + img_train_list + img_val_list
-    
     # Create a dictionnary that has the name of the image as its key and the image path as its value
     image_dict = {os.path.splitext(os.path.basename(img_name))[0]: img_name for img_name in all_img_list}
     
@@ -90,20 +78,15 @@ def set_df():
 
     # Get raw dataframe and the image dictionnary
     df, img_dict = create_img_dict()
-
-
     # Create new column file_path and use the image_id as the key of image_dict and map 
     # its corresponding value to get the path for the image
     df['file_path'] = df['image_id'].map(img_dict.get)
-
     # Create new column category_name and use dx as the key to lesion_cat_dict and map 
     # it to its corresponding value to get the lesion name
     df['category_name'] = df['dx'].map(lesion_cat_dict.get)
-
     # Create new column category_id and assign the integer codes 
     # of the category_name that were transformed into pandas categorical datatype
     df['category_id'] = pd.Categorical(df['category_name']).codes
-
     # Fill age null values by the mean age
     df.age.fillna(df.age.mean(), inplace=True)
     
@@ -113,15 +96,25 @@ def split_images(train_dir='../SkinCancerClassifier/train_dir/',
                  test_dir='../SkinCancerClassifier/test_dir/', 
                  val_dir='../SkinCancerClassifier/valid_dir/', 
                  target_size=(90, 120)):
+    ''' 
+    Rescale, preprocess, apply image transformations 
+    and load them in ImageDataGenerator
     
-
+    Optional Parameters
+        target_size: image pixel dimensions, by default 90x120
+        train_dir, test_dir, val_dir: 
+        Directories for images in train, validation, and test
+    Return
+        test_data, train_data, and valid_data
+    '''
 
     # Rescale test, train, and validation images. Resize them to 90 x 120 pixels
-    test_data = ImageDataGenerator(rescale=1./255).flow_from_directory(test_dir, 
-                                                                        target_size=target_size,
-                                                                        batch_size = 2000, 
-                                                                        seed = 1212) 
-   
+    test_data = ImageDataGenerator(rescale=1./255).flow_from_directory(
+                                                                       test_dir, 
+                                                                       target_size=target_size, 
+                                                                       batch_size = 2000, 
+                                                                       seed = 1212
+                                                                       ) 
     # Apply various transformations to the training data
     # to help the model generalize better on the test data
     train_data = ImageDataGenerator(rotation_range=10,
@@ -130,16 +123,47 @@ def split_images(train_dir='../SkinCancerClassifier/train_dir/',
                                     shear_range=0.1,
                                     zoom_range=0.1,
                                     horizontal_flip=True,
-                                    rescale=1./255).flow_from_directory(train_dir, 
+                                    rescale=1./255).flow_from_directory(
+                                                                        train_dir, 
                                                                         target_size=target_size, 
                                                                         batch_size = 147, 
-                                                                        seed = 1212) 
+                                                                        seed = 1212
+                                                                        ) 
 
     valid_data = ImageDataGenerator(rescale=1./255).flow_from_directory( 
-            val_dir, 
-            target_size=target_size,
-            batch_size = 300,
-            seed = 1212) 
-
-
+                                                                        val_dir, 
+                                                                        target_size=target_size,
+                                                                        batch_size = 300,
+                                                                        seed = 1212
+                                                                        ) 
+    
     return test_data, train_data, valid_data
+
+def plot_confusion_matrix(te_label, y_pred):
+    '''
+    Plot confusion matrix and print classification report
+    
+    Parameters
+        te_label: test images labels
+        y_pred: predicted labels
+    '''
+    
+    # Calculate Confusion Matrix
+    cm = confusion_matrix(te_label, y_pred)
+    df = set_df()
+    # Set figure size and heatmap plot
+    f = plt.figure(figsize=(10,10))
+    ax= plt.subplot()
+    labels = df.groupby('category_id').category_name.first().values
+    sns.heatmap(cm, annot=True, ax = ax, vmax=100, cbar=False, cmap='Paired', mask=(cm==0), fmt=',.0f', linewidths=2, linecolor='grey', ); 
+
+    # Set x, y labels and plot title
+    ax.set_xlabel('Predicted labels', fontsize=16);
+    ax.set_ylabel('True labels', labelpad=30, fontsize=16); 
+    ax.set_title('Confusion Matrix', fontsize=18); 
+    ax.xaxis.set_ticklabels(labels, rotation=90); 
+    ax.yaxis.set_ticklabels(labels, rotation=0);
+    ax.set_facecolor('white')
+    
+    report = classification_report(te_label, y_pred, target_names=df.groupby('category_id').category_name.first().values)
+    print(report)
