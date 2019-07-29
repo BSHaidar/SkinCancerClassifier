@@ -6,7 +6,6 @@ sns.set(style="darkgrid")
 
 
 def create_img_dict():
-
     data_dir = '/Users/basselhaidar/Desktop/Final Project/skin-cancer-mnist-ham10000/'
     # Create dataframe and profile raw data
     raw_metadata_df = pd.read_csv(data_dir + 'HAM10000_metadata.csv')

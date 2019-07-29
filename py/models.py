@@ -23,7 +23,8 @@ from keras.layers import Activation, Reshape
 from keras.optimizers import Adam, SGD
 from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
 from keras.layers.convolutional import *
-from keras.layers import BatchNormalization, Dropout, AveragePooling2D, GlobalAvgPool2D, MaxPooling2D, Dense, Flatten
+from keras.layers import BatchNormalization, Dropout, AveragePooling2D, GlobalAvgPool2D
+from keras.layers import MaxPooling2D, Dense, Flatten, Conv2D
 from keras.applications import inception_v3, DenseNet121
 from sklearn.metrics import confusion_matrix, f1_score, classification_report
 from keras.callbacks import ReduceLROnPlateau, LearningRateScheduler, ModelCheckpoint
