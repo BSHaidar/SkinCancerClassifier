@@ -1,42 +1,25 @@
-# %load_ext autoreload
-# %autoreload 1
-import warnings
-warnings.filterwarnings('ignore')
-import sys
-# sys.path.insert(0, '../SkinCancerClassifier/py')
 import pandas as pd
 import numpy as np
 from numpy.random import seed
-seed(111)
 import os
 import math
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import imread, imshow
 import seaborn as sns
 from PIL import Image
+from numpy.random import seed
 
-import keras
-from keras import models
-from keras import layers
-from keras.models import Model, Sequential, load_model
-from keras.layers import Activation, Reshape
-from keras.optimizers import Adam, SGD
 from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
-from keras.layers.convolutional import *
-from keras.layers import BatchNormalization, Dropout, AveragePooling2D, GlobalAvgPool2D, MaxPooling2D, Dense, Flatten
-from keras.applications import inception_v3, DenseNet121
-from sklearn.metrics import confusion_matrix, f1_score, classification_report
-from keras.callbacks import ReduceLROnPlateau, LearningRateScheduler, ModelCheckpoint
-from keras.regularizers import l2
-from keras.metrics import categorical_crossentropy
-from keras.layers.core import Dense, Flatten
 
-
-from tensorflow import set_random_seed
-set_random_seed(1112)
 
 def img_name(dir_name):
-    ''' Get images filepath and store it in a list'''
+    ''' 
+    Get images filepath and store them in a list
+    Required Parameter
+        dir_name: Directory path
+    Return
+        None
+    '''
     img_list = []
     for i in range(0, 7):
         sub_dir= dir_name + str(i) +'/'
@@ -44,17 +27,30 @@ def img_name(dir_name):
             img_list.append(sub)
     return img_list
 
-def create_img_dict():
+def create_img_dict(data_dir = '../SkinCancerClassifier/',
+                    image_test_dir = '../SkinCancerClassifier/test_dir/', 
+                    image_train_dir = '../SkinCancerClassifier/train_dir/', 
+                    image_val_dir = '../SkinCancerClassifier/valid_dir/'):
+    ''' 
+    Creates raw dataframe and image dictionnary {key:image name, value:image path}
     
-    data_dir = '../SkinCancerClassifier/'
+    Optional Parameters
+        data_dir: Root directory for all files
+        image_test_dir, image_train_dir, image_val_dir: 
+        Directories for images in train, validation, and test
+    Return
+        Dataframe and image dictionnary
+    '''
+    
+    # data_dir = '../SkinCancerClassifier/'
     
     # Create dataframe of raw data
     raw_metadata_df = pd.read_csv(data_dir + 'HAM10000_metadata.csv')
     
     # Directories for images in train, validation, and test
-    image_test_dir = '../SkinCancerClassifier/test_dir/'
-    image_train_dir = '../SkinCancerClassifier/train_dir/'
-    image_val_dir = '../SkinCancerClassifier/valid_dir/'
+    # image_test_dir = '../SkinCancerClassifier/test_dir/'
+    # image_train_dir = '../SkinCancerClassifier/train_dir/'
+    # image_val_dir = '../SkinCancerClassifier/valid_dir/'
     
     # Create a combined list images in all directories with their full file/image path
     img_test_list = img_name(image_test_dir)
@@ -71,6 +67,15 @@ def create_img_dict():
     return raw_metadata_df, image_dict
 
 def set_df():
+    '''
+    This function creates 3 new columns for image file path (file_path), name of skin
+    lesion (category_name), a number mapped to its name (category_id). For age column 
+    with null value, it fills it with the mean age.
+    
+    Return
+        Dataframe 
+    '''
+    
     # Create dictionary with the diagnostic categories of pigmented lesions
     lesion_cat_dict = {
         
@@ -104,19 +109,19 @@ def set_df():
     
     return df
 
-def split_images(train_dir='../SkinCancerClassifier/train_dir/', test_dir='../SkinCancerClassifier/test_dir/', val_dir='../SkinCancerClassifier/valid_dir/', target_size=(90, 120)):
-      
-    # Directories for images in train, validation, and test
-#     train_destination = train_dir
-#     test_destination = test_dir
-#     valid_destination = val_dir
+def split_images(train_dir='../SkinCancerClassifier/train_dir/', 
+                 test_dir='../SkinCancerClassifier/test_dir/', 
+                 val_dir='../SkinCancerClassifier/valid_dir/', 
+                 target_size=(90, 120)):
+    
+
 
     # Rescale test, train, and validation images. Resize them to 90 x 120 pixels
     test_data = ImageDataGenerator(rescale=1./255).flow_from_directory(test_dir, 
                                                                         target_size=target_size,
                                                                         batch_size = 2000, 
                                                                         seed = 1212) 
-    
+   
     # Apply various transformations to the training data
     # to help the model generalize better on the test data
     train_data = ImageDataGenerator(rotation_range=10,
@@ -138,6 +143,3 @@ def split_images(train_dir='../SkinCancerClassifier/train_dir/', test_dir='../Sk
 
 
     return test_data, train_data, valid_data
-
-
-

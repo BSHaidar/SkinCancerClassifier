@@ -39,8 +39,8 @@ set_random_seed(1112)
 from set_img import *
 
 def set_cnn_model(input_shape=(90, 120, 3)):
-    '''A very simple CNN model with one convolution layer
-        and one dense layer just to get a baseline'''
+    """A very simple CNN model with one convolution layer and one dense layer
+    just to get a baseline."""
     cnn = models.Sequential()
     cnn.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', dilation_rate=(2, 2), kernel_regularizer=l2(0.02), input_shape=input_shape))
     cnn.add(BatchNormalization())
@@ -56,7 +56,7 @@ def set_cnn_model(input_shape=(90, 120, 3)):
     return cnn
 
 def fit_cnn_model(cnn, epoch=20, batch_num=32, reduce_by=0.5, start_epoch=0):
-    '''Fit the simple CNN model'''
+    """Fit the simple CNN model."""
    
     # images_train, labels_train, images_test, labels_test, images_val, labels_val = split_images()
     test_data, train_data, valid_data = split_images()
@@ -265,7 +265,7 @@ def train_imagenet_classifier(new_imagenet, epoch=30, reduce_by=0.5):
     return test_data, new_imagenet
 
 def set_cnn_no_dense_model(input_shape = (90, 120, 3), num_classes = 7):
-    ''' Created a model with only convolutional layers and no dense layers'''
+    """Created a model with only convolutional layers and no dense layers."""
 
     model = Sequential()
 
